@@ -39,6 +39,9 @@ param aiServiceAccountSubscriptionId string
 @description('Name AI Search resource')
 param aiSearchName string
 
+@description('Name of AzCosmosDb resource')
+param azCosmosDbName string
+
 @description('Resource ID of the AI Search resource')
 param aiSearchId string
 
@@ -47,6 +50,15 @@ param aiSearchServiceResourceGroupName string
 
 @description('Subscription ID of the AI Search resource')
 param aiSearchServiceSubscriptionId string
+
+@description('Resource Group name of the AzCosmosDb resource')
+param azCosmosDbResourceGroupName string
+
+@description('Subscription ID of the AzCosmosDb resource')
+param azCosmoDbSubscriptionId string
+
+@description('Resource ID of the AzCosmosDb resource')
+param azCosmosDbResourceId string
 
 /* @description('Name for capabilityHost.')
 param capabilityHostName string  */
@@ -57,6 +69,8 @@ param aiServiceKind string
 var acsConnectionName = '${aiHubName}-connection-AISearch'
 
 var aoaiConnection  = '${aiHubName}-connection-AIServices_aoai'
+
+var cosmosdbConnectionName = '${aiHubName}-connection-AzCosmosDb'
 
 var kindAIServicesExists = aiServiceKind == 'AIServices'
 
@@ -70,6 +84,11 @@ resource aiServices 'Microsoft.CognitiveServices/accounts@2024-10-01' existing =
 resource searchService 'Microsoft.Search/searchServices@2024-06-01-preview' existing = {
   name: aiSearchName
   scope: resourceGroup(aiSearchServiceSubscriptionId, aiSearchServiceResourceGroupName)
+}
+
+resource azCosmosDb 'Microsoft.DocumentDB/databaseAccounts@2022-05-15' existing = {
+  name: azCosmosDbName
+  scope: resourceGroup(azCosmoDbSubscriptionId, azCosmosDbResourceGroupName)
 }
 
 resource aiHub 'Microsoft.MachineLearningServices/workspaces@2024-10-01-preview' = {
@@ -121,6 +140,21 @@ resource aiHub 'Microsoft.MachineLearningServices/workspaces@2024-10-01-preview'
     }
   }
 
+  resource hub_connection_azurecosmos_db 'connections@2024-07-01-preview' = {
+    name: cosmosdbConnectionName
+    properties: {
+      category: 'Cosmosdb'
+      target: 'https://${azCosmosDbName}.documents.azure.com:443/'
+      authType: 'AAD'
+      //useWorkspaceManagedIdentity: false
+      isSharedToAll: true
+      metadata: {
+        ApiType: 'Azure'
+        ResourceId: azCosmosDbResourceId
+        location: azCosmosDb.location
+      }
+    }
+  }
   // Resource definition for the capability host
   #disable-next-line BCP081
  /*  resource capabilityHost 'capabilityHosts@2024-10-01-preview' = {
