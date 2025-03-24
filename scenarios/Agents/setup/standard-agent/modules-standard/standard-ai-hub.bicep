@@ -170,3 +170,5 @@ output aiHubID string = aiHub.id
 output aiHubName string = aiHub.name
 output aoaiConnectionName string = aoaiConnection
 output acsConnectionName string = acsConnectionName
+output cosmosConnectionName string = cosmosdbConnectionName
+

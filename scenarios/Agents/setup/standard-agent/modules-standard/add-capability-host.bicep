@@ -13,9 +13,13 @@ param aoaiConnectionName string
 @description('Name for capabilityHost.')
 param capabilityHostName string 
 
+@description('Name for CosmosDB connection.')
+param cosmosConnectionName string
+
 var storageConnections = ['${aiProjectName}/workspaceblobstore']
 var aiSearchConnection = ['${acsConnectionName}']
 var aiServiceConnections = ['${aoaiConnectionName}']
+var cosmosDBConnections = ['${cosmosConnectionName}']
 
 resource aiHub 'Microsoft.MachineLearningServices/workspaces@2024-10-01-preview' existing = {
   name: aiHubName
@@ -26,7 +30,7 @@ resource aiProject 'Microsoft.MachineLearningServices/workspaces@2024-10-01-prev
 }
 
 #disable-next-line BCP081
-resource hubCapabilityHost 'Microsoft.MachineLearningServices/workspaces/capabilityHosts@2024-10-01-preview' = {
+resource hubCapabilityHost 'Microsoft.MachineLearningServices/workspaces/capabilityHosts@2025-01-01-preview' = {
   name: '${aiHubName}-${capabilityHostName}'
   parent: aiHub
   properties: {
@@ -35,7 +39,7 @@ resource hubCapabilityHost 'Microsoft.MachineLearningServices/workspaces/capabil
 }
 
 #disable-next-line BCP081
-resource projectCapabilityHost 'Microsoft.MachineLearningServices/workspaces/capabilityHosts@2024-10-01-preview' = {
+resource projectCapabilityHost 'Microsoft.MachineLearningServices/workspaces/capabilityHosts@2025-01-01-preview' = {
   name: '${aiProjectName}-${capabilityHostName}'
   parent: aiProject
   properties: {
@@ -43,6 +47,7 @@ resource projectCapabilityHost 'Microsoft.MachineLearningServices/workspaces/cap
     aiServicesConnections: aiServiceConnections
     vectorStoreConnections: aiSearchConnection
     storageConnections: storageConnections
+    threadStorageConnections: cosmosDBConnections
   }
   dependsOn: [
     hubCapabilityHost

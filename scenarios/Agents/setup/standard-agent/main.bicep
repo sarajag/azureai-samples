@@ -89,6 +89,7 @@ var acsParts = split(aiSearchServiceResourceId, '/')
 var aiSearchServiceSubscriptionId = acsExists ? acsParts[2] : subscription().subscriptionId
 var aiSearchServiceResourceGroupName = acsExists ? acsParts[4] : resourceGroup().name
 
+
 // Dependent resources for the Azure Machine Learning workspace
 module aiDependencies 'modules-standard/standard-dependent-resources.bicep' = {
   name: 'dependencies-${name}-${uniqueSuffix}-deployment'
@@ -136,6 +137,11 @@ module aiHub 'modules-standard/standard-ai-hub.bicep' = {
     aiServiceAccountResourceGroupName:aiDependencies.outputs.aiServiceAccountResourceGroupName
     aiServiceAccountSubscriptionId:aiDependencies.outputs.aiServiceAccountSubscriptionId
 
+    azCosmosDbName: 'sarajag-test-cosmosdb'
+    azCosmosDbResourceGroupName: 'sarajag-agents-dev-rg'
+    azCosmoDbSubscriptionId: aiDependencies.outputs.aiServiceAccountSubscriptionId
+    azCosmosDbResourceId: '/subscriptions/48a00ade-553c-4bfc-911f-10bc5e037968/resourceGroups/sarajag-agents-dev-rg/providers/Microsoft.DocumentDB/databaseAccounts/sarajag-test-cosmosdb'
+
     keyVaultId: aiDependencies.outputs.keyvaultId
     storageAccountId: aiDependencies.outputs.storageId
   }
@@ -154,6 +160,7 @@ module aiProject 'modules-standard/standard-ai-project.bicep' = {
     aiHubId: aiHub.outputs.aiHubID
   }
 }
+
 
 module aiServiceRoleAssignments 'modules-standard/ai-service-role-assignments.bicep' = {
   name: 'ai-service-role-assignments-${projectName}-${uniqueSuffix}-deployment'
@@ -175,6 +182,18 @@ module aiSearchRoleAssignments 'modules-standard/ai-search-role-assignments.bice
   }
 }
 
+module cosmosAccountRoleAssignments 'modules-standard/cosmos-db-account-role-assignment.bicep' = {
+  name: 'cosmos-account-role-assignments-${projectName}-${uniqueSuffix}-deployment'
+  scope: resourceGroup(aiSearchServiceSubscriptionId, 'sarajag-agents-dev-rg')
+  params: {
+    cosmosDBName: 'sarajag-test-cosmosdb'
+    aiProjectPrincipalId: aiProject.outputs.aiProjectPrincipalId
+    aiProjectId: aiProject.outputs.aiProjectResourceId
+    projectWorkspaceId: aiProject.outputs.aiProjectWorkspaceId
+
+  }
+}
+
 module addCapabilityHost 'modules-standard/add-capability-host.bicep' = {
   name: 'capabilityHost-configuration--${uniqueSuffix}-deployment'
   params: {
@@ -183,10 +202,12 @@ module addCapabilityHost 'modules-standard/add-capability-host.bicep' = {
     aiProjectName: aiProject.outputs.aiProjectName
     acsConnectionName: aiHub.outputs.acsConnectionName
     aoaiConnectionName: aiHub.outputs.aoaiConnectionName
+    cosmosConnectionName: aiHub.outputs.cosmosConnectionName
   }
   dependsOn: [
-    aiSearchRoleAssignments,aiServiceRoleAssignments
+    aiSearchRoleAssignments,aiServiceRoleAssignments, cosmosAccountRoleAssignments
   ]
 }
 
-output PROJECT_CONNECTION_STRING string = aiProject.outputs.projectConnectionString
+//output PROJECT_CONNECTION_STRING string = aiProject.outputs.projectConnectionString
+
